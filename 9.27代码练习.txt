@@ -1,0 +1,318 @@
+9.27 代码练习，以及教你写自己的qsort函数
+学生成绩系统代码
+
+#include <stdio.h>
+
+typedef struct Student {
+    int num;
+    char name[50];
+    int grade[10];
+} stu;
+
+int cmp(int count[], int* n) {
+    int max=0;
+    for (int i = 0; i < *n; i++) {
+        if (count[i] > max)
+        {
+            max = count[i];
+        }
+    }
+    return max;
+}
+
+int main() {
+    int* n;
+    printf("输入几个人\n");
+    scanf("%d", n);
+
+    stu student[*n];
+    int count[*n];
+
+    for (int i = 0; i < *n; i++) {
+        printf("输入学号");
+        scanf("%d", &student[i].num);
+        printf("输入名字");
+        scanf("%s", &student[i].name);
+        printf("输入成绩");
+        scanf("%d %d %d", &student[i].grade[0], &student[i].grade[1], &student[i].grade[2]);
+
+        count[i] = (student[i].grade[0] + student[i].grade[1] + student[i].grade[2]) / 3;
+
+    }
+
+    int max = cmp(count, n);
+
+    for (int i = 0; i < *n; i++) {
+        if (count[i] == max)
+        {
+            printf("%d %s %d", student[i].num, student[i].name, count[i]);
+        }
+    }
+}
+
+
+
+用指针给随机数排最大
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+int n=10;
+
+float imax(float *arr) {
+    int max;
+    for(int i = 0; i < n; i++) {
+        if(*arr<*(arr+i))
+        {
+            *arr=*(arr+i);
+        }
+    }
+    return *arr;
+}
+
+int main() {
+
+    srand(time(NULL));
+
+    float *arr;
+
+
+    for(int i = 0; i < n; i++) {
+        * (arr+i)=(float)rand()/RAND_MAX*10;
+    }
+
+    for(int i = 0; i < n; i++) {
+        printf("%f\n",*(arr+i));
+
+    }
+
+    float max=imax(arr);
+    printf("%f",max);
+    return 0;
+}
+
+
+
+qsort (quick sort)库函数的运用一:
+比较各种类型的数组
+
+#include <stdio.h>
+#include <stdlib.h>
+
+// 比较函数，用于确定排序顺序
+int compare(const void *a, const void *b) { //void可以接收所有类型的指针，但是不能进行加减运算）
+    int *num1 = (int *)a;
+    int *num2 = (int *)b;
+  // double *num1 = (double *)a;
+  //double *num2 = (double *)b;
+  // if (*num1 < *num2) return -1;
+  // if (*num1 > *num2) return 1;
+ //return 0;   (浮点类型也可以直接作差，但是遇到进度较高时不一定得出正确结果)
+    return *num1 - *num2;  //从小到大
+//return *num2-*num1,从大到小
+}
+
+int main() {
+    int arr[] = {5, 2, 8, 1, 9};
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    qsort(arr, n, sizeof(arr[0]), compare);
+
+    printf("排序后的数组：");
+    for (int i = 0; i < n; i++) {
+        printf("%d ", arr[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
+
+
+qsort (quick sort)库函数的运用二：
+比较结构体类型的数组
+
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    int id;
+    char name[20];
+} Student;
+
+// 比较函数，按照学生的 id 进行升序排序
+int compareStudents(const void *a, const void *b) {
+    Student *student1 = (Student *)a;
+    Student *student2 = (Student *)b;
+    return student1->id - student2->id;
+}
+
+int main() {
+    Student students[] = {
+            {3, "Alice"},
+            {1, "Bob"},
+            {2, "Charlie"}
+    };
+    int n = sizeof(students) / sizeof(students[0]);
+
+    qsort(students, n, sizeof(students[0]), compareStudents);
+
+    printf("排序后的学生列表：\n");
+    for (int i = 0; i < n; i++) {
+        printf("ID: %d, Name: %s\n", students[i].id, students[i].name);
+    }
+
+    return 0;
+}
+
+
+用冒泡排序做一个qsort函数（全文的重点）
+
+#include <stdio.h>
+
+
+//比较函数
+int cmp(void *a,void *b,int size){
+    //为什么一定要转类型？因为不统一类型的话，你取void类型的地址，得到不知道几个字节大小的类型，无法进行比较
+    //因为从大到小，所以是b地址上的值减a地址上的值
+    
+    return (*(int *)b) - (*(int *)a);
+    //不可以比较字符形和较细浮点类型（比如零点几的差异）
+    
+    //return (*(char *)b) - (*(char *)a);
+    //不可以比较浮点形
+   
+    //return memcmp((*(const char *)b),(*(const char *)a),size);
+    //因为memcmp是计算内存的差异，所以可以比较所有类型的元素差异,但是纯手搓的话可以试试不用库函数
+}
+
+//交换函数
+//解引用后要进行多对字节的交换
+void swap(char *a,char *b,int size){
+    for(int i=0;i<size;i++){
+        char temp=*a;
+        *a=*b;
+        *b=temp;
+        a++;
+        b++;
+        //char tmp=*a+i;
+        //*a+i=*b+i;
+        //*b+i=tmp;
+    }
+}
+
+//冒泡排序
+//冒泡排序的框架是两个循环，内循环是输入两个相邻元素arr[j]和arr[j+1]，用指针就是输入两个相邻元素的地址base+j和base+j+1
+//想编程，数学题这种长链条的逻辑题，一定要知道自己在干什么，每一步在干什么，为什么这样干
+//base:数组首地址，为什么是void *类型？ 因为数组首地址是一个指针，但是不知道数组元素的类型，所以用void *类型
+void bubble(void *base,int len,int size,int (*cmp)(void *e1,void *e2)){
+    for(int i=0;i<len-1;i++){
+        for(int j=0;j<len-1-i;j++){
+            if(cmp((char *)base+j*size,(char *)base+(j+1)*size)>0){
+            //用base和base+1传参时，因为base是void *类型，无法运算，所以要强制转类型
+            //用base和(int*)base+1时，因为不知道base的类型，+1就加了4个字节（而浮点类型只要加2个字节，字符类型只要加1个字节），所以不能强制转为整形类型
+            //而当强制转为char *类型，char *类型的大小是1个字节，+1表示加一个字节，size是其类型的大小（每个元素的大小，单位是字节），加一个size就得到下一个元素的地址
+            //在char*类型中用+size统一了不同类型中“+1”的效果
+            //base是第一个元素的地址，(char *)base+size就是下一个个元素的地址，(char *)base+j*size就是第j个元素的地址，(char *)base+(j+1)*size就是第j+1个元素的地址
+            //根本要求是传指针，上述解决的是+1导致的由于类型不同而增加字节数不同的问题
+
+                swap((char *)base+j*size,(char *)base+(j+1)*size,size);
+            }
+        }
+    }
+}
+
+
+void test1(){
+    int arr1[]={1,2,3,4,5,6,7,8,9,10};
+    int len1=sizeof(arr1)/sizeof(arr1[0]);
+    int size1=sizeof(arr1[0]);
+    bubble(arr1,len1,size1,cmp);
+    for(int i=0;i<len1;i++){
+        printf("%d ",arr1[i]);
+    }
+}
+
+void test2(){
+    float arr2[]={1.1,2.2,3.3,4.4,5.5,6.6,7.7,8.8,9.9,10.10};
+    int len2=sizeof(arr2)/sizeof(arr2[0]);
+    int size2=sizeof(arr2[0]);
+    bubble(arr2,len2,size2,cmp);
+    for(int i=0;i<len2;i++){
+        printf("%f ",arr2[i]);
+    }
+}
+
+void test3(){
+    char arr3[]={'a','b','c','d','e','f','g','h','i','j'};
+    int len3=sizeof(arr3)/sizeof(arr3[0]);
+    int size3=sizeof(arr3[0]);
+    bubble(arr3,len3,size3,cmp);
+    for(int i=0;i<len3;i++){
+        printf("%c ",arr3[i]);
+    }
+}
+
+struct student{
+    char name[20];
+    int age;
+};
+
+//test4
+int cmp_name(void *a,void *b,int size){
+    return  strcmp(((struct student *)a)->name,((struct student *)b)->name);
+    //return strcmp((*(struct student *)a).name,(*(struct student *)b).name);
+}
+
+void test4(){
+    struct student arr4[]={
+        {"张三",20},
+        {"李四",21},
+        {"王五",22},
+        {"赵六",23},
+        {"田七",24}
+    };
+    int len4=sizeof(arr4)/sizeof(arr4[0]);
+    int size4=sizeof(arr4[0]);
+
+    bubble(arr4,len4,size4,cmp_name);//因为是结构体，所以要新写一个可以比较名字的函数
+    for(int i=0;i<len4;i++){
+        printf("%s ",arr4[i].name);
+    }
+}
+
+//test5
+int cmp_age(void *a,void *b,int size){
+    return  (*(struct student *)b).age-(*(struct student *)a).age;
+    }
+
+void test5(){
+    struct student arr5[]={
+        {"张三",20},
+        {"李四",21},
+        {"王五",22},
+        {"赵六",23},
+        {"田七",24}
+    };
+    int len5=sizeof(arr5)/sizeof(arr5[0]);
+    int size5=sizeof(arr5[0]);
+
+    bubble(arr5,len5,size5,cmp_age);//因为是结构体，所以要新写一个可以比较年龄的函数
+    for(int i=0;i<len5;i++){
+        printf(" %d ",arr5[i].age);
+    }
+}
+
+//&base.name
+
+//主函数
+int main(){
+
+    test1();
+    test2();
+    test3();
+    test4();
+    test5();
+
+    return 0;
+}
